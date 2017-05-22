@@ -32,6 +32,18 @@ function Hero(game, x, y) {
 Hero.prototype = Object.create(Phaser.Sprite.prototype);
 Hero.prototype.constructor = Hero;
 
+Hero.prototype.move = function (direction) {
+    this.x += direction * 2.5; // 2.5 pixels each frame
+}
+
+PlayState.init = function () {
+    this.keys = this.game.input.keyboard.addKeys({
+        left: Phaser.KeyCode.LEFT,
+        right: Phaser.KeyCode.RIGHT
+    });
+    this.game.renderer.renderSession.roundPixels = true;
+};
+
 // create game entities and set up world here
 PlayState.create = function () {
     this.game.add.image(0, 0, 'background')
@@ -46,6 +58,19 @@ console.log(data)
     this._spawnCharacters({hero: data.hero})
 };
 
+PlayState.update = function () {
+    this._handleInput();
+};
+
+PlayState._handleInput = function () {
+    if (this.keys.left.isDown) { // move hero left
+        this.hero.move(-1);
+    }
+    else if (this.keys.right.isDown) { // move hero right
+        this.hero.move(1);
+    }
+};
+
 PlayState._spawnPlatform = function (platform) {
     this.game.add.sprite(platform.x, platform.y, platform.image);
 };
@@ -55,4 +80,6 @@ PlayState._spawnCharacters = function (data) {
     this.hero = new Hero(this.game, data.hero.x, data.hero.y);
     this.game.add.existing(this.hero);
 }
+
+
 
