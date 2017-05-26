@@ -1,11 +1,34 @@
+//sprites
+function Hero(game, x, y) {
+    // call Phaser.Sprite constructor
+    Phaser.Sprite.call(this, game, x, y, 'hero');
+    //phase call the origin anchor
+    this.anchor.set(0.5, 0.5);
+    //creating a body for the character
+    this.game.physics.enable(this);
+    this.body.collideWorldBounds = true;
+}
+
+// inherit from Phaser.Sprite
+Hero.prototype = Object.create(Phaser.Sprite.prototype);
+Hero.prototype.constructor = Hero;
+
+Hero.prototype.move = function (direction) {
+    const SPEED = 200;
+    this.body.velocity.x = direction * SPEED;
+}
+
+////////GAME
+
 //create a game state
 PlayState = {};
 
-//load  phaser with the canvas size 960 and 600
-window.onload = function(){
-	let game = new Phaser.Game(960, 600, Phaser.AUTO,'game');
-	game.state.add('play', PlayState);
-	game.state.start('play');
+PlayState.init = function () {
+    this.keys = this.game.input.keyboard.addKeys({
+        left: Phaser.KeyCode.LEFT,
+        right: Phaser.KeyCode.RIGHT
+    });
+    this.game.renderer.renderSession.roundPixels = true;
 };
 
 //load game assets
@@ -21,32 +44,6 @@ PlayState.preload = function(){
     this.game.load.image('hero', 'images/hero_stopped.png');
 };
 
-function Hero(game, x, y) {
-    // call Phaser.Sprite constructor
-    Phaser.Sprite.call(this, game, x, y, 'hero');
-    //phase call the origin anchor
-    this.anchor.set(0.5, 0.5);
-    //creating a body for the character
-    this.game.physics.enable(this);
-}
-
-// inherit from Phaser.Sprite
-Hero.prototype = Object.create(Phaser.Sprite.prototype);
-Hero.prototype.constructor = Hero;
-
-Hero.prototype.move = function (direction) {
-    const SPEED = 200;
-    this.body.velocity.x = direction * SPEED;
-}
-
-PlayState.init = function () {
-    this.keys = this.game.input.keyboard.addKeys({
-        left: Phaser.KeyCode.LEFT,
-        right: Phaser.KeyCode.RIGHT
-    });
-    this.game.renderer.renderSession.roundPixels = true;
-};
-
 // create game entities and set up world here
 PlayState.create = function () {
     this.game.add.image(0, 0, 'background')
@@ -54,17 +51,20 @@ PlayState.create = function () {
 
 };
 
-PlayState._loadLevel = function (data) {
-console.log(data)
-// spawn all platforms
-    data.platforms.forEach(this._spawnPlatform, this);
-    this._spawnCharacters({hero: data.hero})
-};
-
 PlayState.update = function () {
+    this._handleCollisions();
     this._handleInput();
 };
 
+
+PlayState._handleCollisions = function () {
+    this.game.physics.arcade.collide(this.hero, this.platforms);
+};
+
+
+
+////////////////////////////////////////////////////////////
+// LOGIC OF THE GAME
 PlayState._handleInput = function () {
     if (this.keys.left.isDown) { // move hero left
         this.hero.move(-1);
@@ -77,8 +77,24 @@ PlayState._handleInput = function () {
     }
 };
 
-PlayState._spawnPlatform = function (platform) {
-    this.game.add.sprite(platform.x, platform.y, platform.image);
+PlayState._loadLevel = function (data) {
+	// create all the groups/layers that we need
+    this.platforms = this.game.add.group();
+// spawn all platforms
+    data.platforms.forEach(this._spawnPlatform, this);
+    this._spawnCharacters({hero: data.hero});
+    // enable gravity
+    const GRAVITY = 1200;
+    this.game.physics.arcade.gravity.y = GRAVITY;
+    
+};
+
+PlayState._spawnPlatform = function(platform) {
+    let sprite = this.platforms.create(
+        platform.x, platform.y, platform.image);
+    this.game.physics.enable(sprite);
+    sprite.body.allowGravity = false;
+    sprite.body.immovable = true;
 };
 
 PlayState._spawnCharacters = function (data) {
@@ -89,5 +105,14 @@ PlayState._spawnCharacters = function (data) {
 
 
 
+
+
+//ENTRY POINT
+//load  phaser with the canvas size 960 and 600
+window.onload = function(){
+	let game = new Phaser.Game(960, 600, Phaser.AUTO,'game');
+	game.state.add('play', PlayState);
+	game.state.start('play');
+};
 
 
